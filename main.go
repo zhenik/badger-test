@@ -18,7 +18,7 @@ func main() {
 
 	// un-marshalling
 	var item2 Item
-	jsonPayload := `{"id":"uuid1","field1":"f2","field2":32.4}`
+	jsonPayload := `{"id":"uuid1","field1":"new value","field2":42}`
 	err = json.Unmarshal([]byte(jsonPayload), &item2)
 	if err != nil {
 		log.Fatal(err)
@@ -31,10 +31,14 @@ func main() {
 	}
 
 	store.Upsert("uuid1", item1)
-
 	item3, err := store.Get("uuid1")
-
 	fmt.Println(item3)
+	store.Upsert("uuid1", item2)
+	item4, err := store.Get("uuid1")
+	fmt.Println(item4)
 
+	store.Upsert("mcrs", Item{Id: "mcrs", Field1: "some other stuf", Field2: 224})
 
+	items, err := store.GetAll()
+	fmt.Println(items)
 }

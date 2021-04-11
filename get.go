@@ -7,6 +7,13 @@ import (
 	"github.com/dgraph-io/badger/v3"
 	"log"
 )
+
+// KVP simple named key value pair storage
+type KVP struct {
+	Key   []byte
+	Value []byte
+}
+
 // ErrNotFound is returned when no data is found for the given key
 var ErrNotFound = errors.New("no data found for this key")
 
@@ -28,17 +35,63 @@ func (s *Store) GetValueBytes(key string) ([]byte, error) {
 	})
 	return valueCopy, err
 }
-
 func (s *Store) Get(key string) (Item, error) {
 	valueBytes, _ := s.GetValueBytes(key)
-
 
 	var item Item
 	d := gob.NewDecoder(bytes.NewReader(valueBytes))
 	if err := d.Decode(&item); err != nil {
 		log.Println("Decoding error")
 	}
-	log.Println("Item decoded",item)
+	log.Println("Item decoded", item)
 	return item, nil
 }
 
+// GetValuesBytes retrieves a value from badgerhold and puts it into result.  Result must be a pointer
+func (s *Store) GetValuesBytes() ([]KVP, error) {
+	var results []KVP
+
+	err := s.Badger().View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchSize = 10
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			k := item.Key()
+			err := item.Value(func(v []byte) error {
+				//fmt.Printf("key=%s, value=%s\n", k, v)
+				res := KVP{k, v}
+				results = append(results, res)
+				return nil
+			})
+
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return []KVP{}, err
+	}
+	return results, nil
+}
+
+func (s *Store) GetAll() ([]Item, error) {
+	valuesBytes, err := s.GetValuesBytes()
+	if err != nil {
+		return nil, err
+	}
+	var results []Item
+
+	for _, row := range valuesBytes {
+		var item Item
+		d := gob.NewDecoder(bytes.NewReader(row.Value))
+		if err := d.Decode(&item); err != nil {
+			log.Println("Decoding error")
+		}
+		results = append(results, item)
+	}
+	return results, nil
+}

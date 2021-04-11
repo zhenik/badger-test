@@ -5,14 +5,14 @@ import (
 	"log"
 )
 
-// Badger is a simple helper for db access
-type Badger struct {
+// Store is a badgerhold wrapper around a badger DB
+type Store struct {
 	db *badger.DB
 }
 
 // NewBadgerDBFromPath returns a new badgerdb
-func NewBadgerDBFromPath(path string) (Badger, error) {
-	b := Badger{}
+func NewBadgerDBFromPath(path string) (Store, error) {
+	b := Store{}
 	opts := badger.DefaultOptions(path)
 	db, err := badger.Open(opts)
 	if err != nil {
@@ -21,4 +21,9 @@ func NewBadgerDBFromPath(path string) (Badger, error) {
 	}
 	b.db = db
 	return b, nil
+}
+
+// Badger returns the underlying Badger DB
+func (s *Store) Badger() *badger.DB {
+	return s.db
 }

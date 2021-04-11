@@ -1,47 +1,44 @@
 package main
 
 import (
-	"fmt"
+	"bytes"
+	"encoding/gob"
+	"errors"
 	"github.com/dgraph-io/badger/v3"
+	"log"
 )
+// ErrNotFound is returned when no data is found for the given key
+var ErrNotFound = errors.New("no data found for this key")
 
-// Get retrieves a value from badgerhold and puts it into result.  Result must be a pointer
-func (s *Store) Get(key, result interface{}) error {
-	err := s.db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get()
-		handle(err)
+// GetValueBytes retrieves a value from badgerhold and puts it into result.  Result must be a pointer
+func (s *Store) GetValueBytes(key string) ([]byte, error) {
+	encodedKey := encodeKey(key)
 
-		var valNot, valCopy []byte
-		err := item.Value(func(val []byte) error {
-			// This func with val would only be called if item.Value encounters no error.
-
-			// Accessing val here is valid.
-			fmt.Printf("The answer is: %s\n", val)
-
-			// Copying or parsing val is valid.
-			valCopy = append([]byte{}, val...)
-
-			// Assigning val slice to another variable is NOT OK.
-			valNot = val // Do not do this.
+	var valueCopy []byte
+	err := s.Badger().View(func(txn *badger.Txn) error {
+		item, err := txn.Get(encodedKey)
+		if err != nil {
+			return ErrNotFound
+		}
+		err = item.Value(func(val []byte) error {
+			valueCopy = append([]byte{}, val...)
 			return nil
 		})
-		handle(err)
-
-		// DO NOT access val here. It is the most common cause of bugs.
-		fmt.Printf("NEVER do this. %s\n", valNot)
-
-		// You must copy it to use it outside item.Value(...).
-		fmt.Printf("The answer is: %s\n", valCopy)
-
-		// Alternatively, you could also use item.ValueCopy().
-		valCopy, err = item.ValueCopy(nil)
-		handle(err)
-		fmt.Printf("The answer is: %s\n", valCopy)
-
-		return nil
+		return err
 	})
-	//return s.Badger().View(func(tx *badger.Txn) error {
-	//	//return s.TxGet(tx, key, result)
-	//	return s.Get(key, result)
-	//})
+	return valueCopy, err
 }
+
+func (s *Store) Get(key string) (Item, error) {
+	valueBytes, _ := s.GetValueBytes(key)
+
+
+	var item Item
+	d := gob.NewDecoder(bytes.NewReader(valueBytes))
+	if err := d.Decode(&item); err != nil {
+		log.Println("Decoding error")
+	}
+	log.Println("Item decoded",item)
+	return item, nil
+}
+

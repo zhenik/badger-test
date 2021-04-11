@@ -24,4 +24,17 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Println(item2)
+
+	store, err := NewBadgerDBFromPath("/tmp")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	store.Upsert("uuid1", item1)
+
+	item3, err := store.Get("uuid1")
+
+	fmt.Println(item3)
+
+
 }

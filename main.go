@@ -1,14 +1,27 @@
 package main
 
-import "fmt"
-
-type Item struct {
-	Id     string  `json:"id"`
-	Field1 string  `json:"field1"`
-	Field2 float32 `json:"field2"`
-}
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+)
 
 func main() {
-	item := Item{Id: "uuid1"}
-	fmt.Println(item)
+	item1 := Item{Id: "uuid1", Field1: "f2", Field2: 32.4}
+
+	// marshalling
+	jsonMarshalled, err := json.Marshal(&item1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(jsonMarshalled))
+
+	// un-marshalling
+	var item2 Item
+	jsonPayload := `{"id":"uuid1","field1":"f2","field2":32.4}`
+	err = json.Unmarshal([]byte(jsonPayload), &item2)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(item2)
 }

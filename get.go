@@ -86,10 +86,9 @@ func (s *Store) GetAll() ([]Item, error) {
 	var results []Item
 
 	for _, row := range valuesBytes {
-		var item Item
-		d := gob.NewDecoder(bytes.NewReader(row.Value))
-		if err := d.Decode(&item); err != nil {
-			log.Println("Decoding error")
+		item, err := decodeValue(row.Value)
+		if err != nil {
+			return nil, err
 		}
 		results = append(results, item)
 	}

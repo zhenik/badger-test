@@ -41,4 +41,8 @@ func main() {
 
 	items, err := store.GetAll()
 	fmt.Println(items)
+
+	keys, err := store.GetAllKeys()
+	fmt.Println(keys)
+
 }

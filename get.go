@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"errors"
+	"fmt"
 	"github.com/dgraph-io/badger/v3"
 	"log"
 )
@@ -91,6 +92,28 @@ func (s *Store) GetAll() ([]Item, error) {
 			return nil, err
 		}
 		results = append(results, item)
+	}
+	return results, nil
+}
+
+func (s *Store) GetAllKeys() ([]string, error) {
+	var results []string
+
+	err := s.Badger().View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = false
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			row := it.Item()
+			k := row.Key()
+			results = append(results, string(k))
+			fmt.Printf("key=%s\n", k)
+		}
+		return nil
+	})
+	if err != nil {
+		return []string{}, err
 	}
 	return results, nil
 }

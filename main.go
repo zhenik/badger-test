@@ -31,18 +31,26 @@ func main() {
 	}
 
 	store.Upsert("uuid1", item1)
-	item3, err := store.Get("uuid1")
+	item3, err := store.GetItem("uuid1")
 	fmt.Println(item3)
 	store.Upsert("uuid1", item2)
-	item4, err := store.Get("uuid1")
+	item4, err := store.GetItem("uuid1")
 	fmt.Println(item4)
 
 	store.Upsert("mcrs", Item{Id: "mcrs", Field1: "some other stuf", Field2: 224})
 
-	items, err := store.GetAll()
+	items, err := store.GetItems()
 	fmt.Println(items)
 
 	keys, err := store.GetAllKeys()
 	fmt.Println(keys)
 
+	fmt.Println("Deleting entry `uuid1`")
+	store.DeleteItem("uuid1")
+
+	items2, err := store.GetItems()
+	fmt.Println(items2)
+
+	keys2, err := store.GetAllKeys()
+	fmt.Println(keys2)
 }

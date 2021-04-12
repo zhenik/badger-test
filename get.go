@@ -18,8 +18,8 @@ type KVP struct {
 // ErrNotFound is returned when no data is found for the given key
 var ErrNotFound = errors.New("no data found for this key")
 
-// GetValueBytes retrieves a value from badgerhold and puts it into result.  Result must be a pointer
-func (s *Store) GetValueBytes(key string) ([]byte, error) {
+// GetValue retrieves a value []byte from data store and return a copy of it
+func (s *Store) GetValue(key string) ([]byte, error) {
 	encodedKey := encodeKey(key)
 
 	var valueCopy []byte
@@ -36,20 +36,23 @@ func (s *Store) GetValueBytes(key string) ([]byte, error) {
 	})
 	return valueCopy, err
 }
-func (s *Store) Get(key string) (Item, error) {
-	valueBytes, _ := s.GetValueBytes(key)
+
+// GetItem retrieves an Item from data store. Throw
+func (s *Store) GetItem(key string) (Item, error) {
+	valueBytes, _ := s.GetValue(key)
 
 	var item Item
 	d := gob.NewDecoder(bytes.NewReader(valueBytes))
 	if err := d.Decode(&item); err != nil {
 		log.Println("Decoding error")
+		return Item{}, err
 	}
 	log.Println("Item decoded", item)
 	return item, nil
 }
 
-// GetValuesBytes retrieves a value from badgerhold and puts it into result.  Result must be a pointer
-func (s *Store) GetValuesBytes() ([]KVP, error) {
+// GetValues retrieves a value from badgerhold and puts it into result.  Result must be a pointer
+func (s *Store) GetValues() ([]KVP, error) {
 	var results []KVP
 
 	err := s.Badger().View(func(txn *badger.Txn) error {
@@ -79,8 +82,8 @@ func (s *Store) GetValuesBytes() ([]KVP, error) {
 	return results, nil
 }
 
-func (s *Store) GetAll() ([]Item, error) {
-	valuesBytes, err := s.GetValuesBytes()
+func (s *Store) GetItems() ([]Item, error) {
+	valuesBytes, err := s.GetValues()
 	if err != nil {
 		return nil, err
 	}
